@@ -8,19 +8,19 @@ self.__precacheManifest = [
     "url": "/snowfall-synth/static/js/runtime~main.7cffbfd4.js"
   },
   {
-    "revision": "23d84957c8bd77a97cbd",
-    "url": "/snowfall-synth/static/js/main.18ee496b.chunk.js"
+    "revision": "0df9e1cca4c9ce2244a3",
+    "url": "/snowfall-synth/static/js/main.1a1b6351.chunk.js"
   },
   {
     "revision": "5a07805274a5b36bc628",
     "url": "/snowfall-synth/static/js/2.bd17c0ad.chunk.js"
   },
   {
-    "revision": "23d84957c8bd77a97cbd",
+    "revision": "0df9e1cca4c9ce2244a3",
     "url": "/snowfall-synth/static/css/main.3244ef7c.chunk.css"
   },
   {
-    "revision": "e07ee8f88256130ea31705692f8b12ac",
+    "revision": "5fac443f2d69df6dda1e7439d4b78ed5",
     "url": "/snowfall-synth/index.html"
   }
 ];
