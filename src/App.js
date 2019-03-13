@@ -10,6 +10,9 @@ class App extends Component {
           Generative Music Sketch
         </header>
         <main>
+          <div>
+            Please wait while the music loads. (10 seconds or so)
+          </div>
           <a href='./'>
             Refresh to hear a new atmosphere
           </a>
