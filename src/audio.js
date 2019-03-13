@@ -14,17 +14,17 @@ const choose = items => (
 const N_PARTIALS = 32
 const ROOT_FREQUENCY = choose([80, 100, 120]);
 const BASS_BOOST = 0.9;
-const TEMPO = Math.random() * 0.15 + 0.25;
+const TEMPO = Math.random() * 0.25 + 0.25;
 const CHORD = choose([
   [ 1,   5/3, 15/6 ],
   [ 5/4, 3/2, 10/4 ],
   [ 1,   3/2, 10/4 ]
 ]);
-const TONAL_FLOOR = 4;
-const TONAL_RANGE = 8;
+const TONAL_FLOOR = 3 + Math.random() * 1;
+const TONAL_RANGE = 6 + Math.random() * 3;
 const TONAL_BOOST = 1;
-const rhythmFrequencies = [1,1,1,2,2,2,4,4,8,3,3,6,6];
-const TRACK_DURATION = TEMPO * 3 * 8;
+const rhythmFrequencies = [4,6,8,10,12,16];
+const TRACK_DURATION = 12;
 
 
 // AUDIO CONTEXT 
@@ -71,7 +71,38 @@ const snowflake = VG.createNode(({
   q
 }) => {
 
+  const modulators = [
+    oscWithGain({ key: 'panner', destination: 'pan' }, { 
+      gain: Math.random() * 1.5,
+      frequency: Math.random() * -8 + 16,
+      // choose(rhythmFrequencies) ** choose([-1]) * TEMPO,
+      type: choose(['sine', 'square', 'sawtooth', 'triangle'])
+    }),
+
+    oscWithGain({ key: 'gain', destination: 'gain' }, {
+      gain: gain * Math.random() * 0.2,
+      frequency: Math.random() * 4,
+      //choose(rhythmFrequencies) ** choose([-1]) * TEMPO,
+      type: choose(['sine', 'triangle'])
+    }),
+
+    oscWithGain({key: 'filter', destination: 'Q' }, {
+      gain: 2 ** (Math.random() * TONAL_RANGE + TONAL_FLOOR - 4),
+      frequency: Math.random() * -8 + 16,
+      //choose(rhythmFrequencies) ** choose([-1]) * TEMPO,
+      type: choose(['sawtooth', 'triangle', 'square'])
+    })
+  ];
+
   return {
+    // 'compressor': VG.dynamicsCompressor('output', {
+    //   threshold: -50,
+    //   knee: 40,
+    //   ratio: 20,
+    //   attack: 0.0,
+    //   release: TEMPO * 0.25
+    // }),
+
     'gain': VG.gain('output', {
       gain: 0.001 * gain * (q ** TONAL_BOOST)
     }),
@@ -86,47 +117,34 @@ const snowflake = VG.createNode(({
       Q: q
     }, 'input'),
 
-    'panModulator': oscWithGain({ key: 'panner', destination: 'pan' }, { 
-      gain: Math.random() * 2,
-      frequency: choose(rhythmFrequencies) ** choose([1, -1, -1]) * TEMPO,
-      type: choose(['sine', 'square', 'sawtooth', 'triangle'])
-    }),
-
-    'gainModulator': oscWithGain({ key: 'gain', destination: 'gain' }, {
-      gain: gain * q / (2 ** (Math.random() * 1)),
-      frequency: choose(rhythmFrequencies) ** choose([1, -1, -1]) * TEMPO,
-      type: choose(['sine', 'square', 'sawtooth', 'triangle'])
-    }),
-
-    'qModulator': oscWithGain({key: 'filter', destination: 'Q' }, {
-      gain: q / (2 ** (Math.random() * 0.5)),
-      frequency: choose(rhythmFrequencies) ** choose([1, -1, -1]) * TEMPO,
-      type: choose(['sine', 'square', 'sawtooth', 'triangle'])
-    })
+    'modulator': choose(modulators)
   }
 });
 
 
 const snowSynth = VG.createNode(({
-  partials
+  partials,
+  gainPattern
 }) => {
 
 
-  const inputNozzle = {
+  const container = {
+    'outputNozzle': VG.gain('output', {
+      gain: gainPattern
+    }),
     'inputNozzle': VG.gain(
-      R.range(0, partials.length), 
+      R.range(0, partials.length), // a list of all the snowflake keys
       { gain: 1 }, 
       'input'
-    ),
+    )
   };
 
   const snowflakes = R.map(
-    partial => snowflake('output', partial), 
+    partial => snowflake('outputNozzle', partial), 
     partials
   );
 
-
-  return Object.assign(inputNozzle, snowflakes);
+  return Object.assign(container, snowflakes);
 });
 
 
@@ -148,6 +166,11 @@ const createPartials = ({
   return R.map(partial, R.range(1, nPartials + 1));
 };
 
+
+const generateValueCurve = length => (
+  R.map( () => choose([0.1, 4]), R.range(0, length) )
+);
+
 offlineGraph.update({
   'masterPan': VG.stereoPanner('output', { pan: 0.1 } ),
 
@@ -162,15 +185,33 @@ offlineGraph.update({
   'masterGain': VG.gain('compressor', { gain: 0.1 }),
 
   'ss1': snowSynth('masterGain', {
-    partials: createPartials({ rootFrequency: ROOT_FREQUENCY * CHORD[0], nPartials: N_PARTIALS})
+    partials: createPartials({ rootFrequency: ROOT_FREQUENCY * CHORD[0], nPartials: N_PARTIALS}),
+    gainPattern: [ 
+      'setValueCurveAtTime', 
+      generateValueCurve(choose([8,16])), 
+      currentTime, 
+      TRACK_DURATION,
+    ]
   }),
 
   'ss2': snowSynth('masterGain', {
-    partials: createPartials({ rootFrequency: ROOT_FREQUENCY * CHORD[1], nPartials: N_PARTIALS})
+    partials: createPartials({ rootFrequency: ROOT_FREQUENCY * CHORD[1], nPartials: N_PARTIALS}),
+    gainPattern: [ 
+      'setValueCurveAtTime', 
+      generateValueCurve(choose([12,24])), 
+      currentTime, 
+      TRACK_DURATION
+    ]
   }),
 
   'ss3': snowSynth('masterGain', {
-    partials: createPartials({ rootFrequency: ROOT_FREQUENCY * CHORD[2], nPartials: N_PARTIALS})
+    partials: createPartials({ rootFrequency: ROOT_FREQUENCY * CHORD[2], nPartials: N_PARTIALS}),
+    gainPattern: [ 
+      'setValueCurveAtTime', 
+      generateValueCurve(choose([12,16])), 
+      currentTime, 
+      TRACK_DURATION,    
+    ]
   }),
 
   'noise': VG.bufferSource(['ss1', 'ss2', 'ss3'], {
