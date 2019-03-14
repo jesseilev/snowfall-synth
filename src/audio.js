@@ -175,14 +175,14 @@ offlineGraph.update({
   'masterPan': VG.stereoPanner('output', { pan: 0.1 } ),
 
   'compressor': VG.dynamicsCompressor('masterPan', {
-    threshold: -100,
+    threshold: -60,
     knee: 40,
     ratio: 20,
     attack: 0.0,
     release: TEMPO * 0.25
   }),
 
-  'masterGain': VG.gain('compressor', { gain: 0.1 }),
+  'masterGain': VG.gain('compressor', { gain: 1 }),
 
   'ss1': snowSynth('masterGain', {
     partials: createPartials({ rootFrequency: ROOT_FREQUENCY * CHORD[0], nPartials: N_PARTIALS}),
